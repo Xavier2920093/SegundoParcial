@@ -1,4 +1,4 @@
-package VecinoCercano
+package TSP
 
 import (
 	"fmt"
@@ -6,11 +6,13 @@ import (
 	"math/rand"
 	"sync"
 	"time"
+
+	lectorinstancias "github.com/Xavier2920093/SegundoParcial/LectorInstancias"
 	//aca iria el uso del modulo lectorinstancias
 )
 
 // Calcula la distancia euclidiana entre dos nodos
-func distanciaEuclidiana(nodo1, nodo2 lectorinstancias.Nodo) float64 {
+func DistanciaEuclidiana(nodo1, nodo2 lectorinstancias.Nodo) float64 {
 	deltaX := nodo1.CoorX - nodo2.CoorX
 	deltaY := nodo1.CoorY - nodo2.CoorY
 	return math.Sqrt(deltaX*deltaX + deltaY*deltaY)
@@ -35,7 +37,7 @@ func VecinoMasCercano(nodos []lectorinstancias.Nodo) ([]lectorinstancias.Distanc
 
 		for _, nodo := range nodos {
 			if !visitados[nodo.Nombre] {
-				dist := distanciaEuclidiana(nodoActual, nodo)
+				dist := DistanciaEuclidiana(nodoActual, nodo)
 				if dist < minDistancia {
 					nodoMasCercano = nodo
 					minDistancia = dist
@@ -59,9 +61,9 @@ func VecinoMasCercano(nodos []lectorinstancias.Nodo) ([]lectorinstancias.Distanc
 	ruta = append(ruta, lectorinstancias.Distancia{
 		NodoI:     nodoActual.Nombre,
 		NodoFinal: nodos[0].Nombre,
-		Distancia: distanciaEuclidiana(nodoActual, nodos[0]),
+		Distancia: DistanciaEuclidiana(nodoActual, nodos[0]),
 	})
-	totalDistancia += distanciaEuclidiana(nodoActual, nodos[0])
+	totalDistancia += DistanciaEuclidiana(nodoActual, nodos[0])
 
 	return ruta, totalDistancia
 }
@@ -84,14 +86,14 @@ func InsercionMasCercana(nodos []lectorinstancias.Nodo) ([]lectorinstancias.Dist
 		ruta = append(ruta, lectorinstancias.Distancia{
 			NodoI:     nodos[0].Nombre,
 			NodoFinal: nodos[1].Nombre,
-			Distancia: distanciaEuclidiana(nodos[0], nodos[1]),
+			Distancia: DistanciaEuclidiana(nodos[0], nodos[1]),
 		})
 		ruta = append(ruta, lectorinstancias.Distancia{
 			NodoI:     nodos[1].Nombre,
 			NodoFinal: nodos[0].Nombre,
-			Distancia: distanciaEuclidiana(nodos[1], nodos[0]),
+			Distancia: DistanciaEuclidiana(nodos[1], nodos[0]),
 		})
-		totalDistancia = 2 * distanciaEuclidiana(nodos[0], nodos[1])
+		totalDistancia = 2 * DistanciaEuclidiana(nodos[0], nodos[1])
 	}
 
 	// Inserción más cercana
@@ -106,7 +108,7 @@ func InsercionMasCercana(nodos []lectorinstancias.Nodo) ([]lectorinstancias.Dist
 				for i := 0; i < len(ruta); i++ {
 					nodoI := encontrarNodo(ruta[i].NodoI, nodos)
 					nodoF := encontrarNodo(ruta[i].NodoFinal, nodos)
-					incremento := distanciaEuclidiana(nodoI, nodo) + distanciaEuclidiana(nodo, nodoF) - ruta[i].Distancia
+					incremento := DistanciaEuclidiana(nodoI, nodo) + DistanciaEuclidiana(nodo, nodoF) - ruta[i].Distancia
 					if incremento < minIncremento {
 						nodoMasCercano = nodo
 						minIncremento = incremento
@@ -124,12 +126,12 @@ func InsercionMasCercana(nodos []lectorinstancias.Nodo) ([]lectorinstancias.Dist
 			ruta[posicion] = lectorinstancias.Distancia{
 				NodoI:     nodoI.Nombre,
 				NodoFinal: nodoMasCercano.Nombre,
-				Distancia: distanciaEuclidiana(nodoI, nodoMasCercano),
+				Distancia: DistanciaEuclidiana(nodoI, nodoMasCercano),
 			}
 			ruta[posicion+1] = lectorinstancias.Distancia{
 				NodoI:     nodoMasCercano.Nombre,
 				NodoFinal: nodoF.Nombre,
-				Distancia: distanciaEuclidiana(nodoMasCercano, nodoF),
+				Distancia: DistanciaEuclidiana(nodoMasCercano, nodoF),
 			}
 			totalDistancia += minIncremento
 			visitados[nodoMasCercano.Nombre] = true
@@ -154,7 +156,7 @@ func calcularDistancias(nodos []lectorinstancias.Nodo, distancias *[]lectorinsta
 	defer wg.Done()
 	for i := 0; i < len(nodos)-1; i++ {
 		for j := i + 1; j < len(nodos); j++ {
-			distancia := distanciaEuclidiana(nodos[i], nodos[j])
+			distancia := DistanciaEuclidiana(nodos[i], nodos[j])
 			*distancias = append(*distancias, lectorinstancias.Distancia{
 				NodoI:     nodos[i].Nombre,
 				NodoFinal: nodos[j].Nombre,
@@ -186,7 +188,7 @@ func Calculo(IndiceNodos []lectorinstancias.Nodo) ([]lectorinstancias.Distancia,
 
 }
 
-func busquedaVecindario(nodos []lectorinstancias.Nodo) ([]lectorinstancias.Distancia, float64) {
+func BusquedaVecindario(nodos []lectorinstancias.Nodo) ([]lectorinstancias.Distancia, float64) {
 	// Inicializar la ruta como una permutación de los nodos
 	ruta := make([]lectorinstancias.Nodo, len(nodos))
 	copy(ruta, nodos)
@@ -226,7 +228,7 @@ func busquedaVecindario(nodos []lectorinstancias.Nodo) ([]lectorinstancias.Dista
 		distancia := lectorinstancias.Distancia{
 			NodoI:     ruta[i].Nombre,
 			NodoFinal: ruta[i+1].Nombre,
-			Distancia: distanciaEuclidiana(ruta[i], ruta[i+1]),
+			Distancia: DistanciaEuclidiana(ruta[i], ruta[i+1]),
 		}
 		distancias = append(distancias, distancia)
 	}
@@ -235,7 +237,7 @@ func busquedaVecindario(nodos []lectorinstancias.Nodo) ([]lectorinstancias.Dista
 	distanciaFinal := lectorinstancias.Distancia{
 		NodoI:     ruta[len(ruta)-1].Nombre,
 		NodoFinal: ruta[0].Nombre,
-		Distancia: distanciaEuclidiana(ruta[len(ruta)-1], ruta[0]),
+		Distancia: DistanciaEuclidiana(ruta[len(ruta)-1], ruta[0]),
 	}
 	distancias = append(distancias, distanciaFinal)
 
@@ -245,9 +247,9 @@ func busquedaVecindario(nodos []lectorinstancias.Nodo) ([]lectorinstancias.Dista
 func calcularDistanciaTotal(ruta []lectorinstancias.Nodo) float64 {
 	distanciaTotal := 0.0
 	for i := 0; i < len(ruta)-1; i++ {
-		distanciaTotal += distanciaEuclidiana(ruta[i], ruta[i+1])
+		distanciaTotal += DistanciaEuclidiana(ruta[i], ruta[i+1])
 	}
 	// Agregar la distancia desde el último nodo hasta el primero para cerrar el ciclo
-	distanciaTotal += distanciaEuclidiana(ruta[len(ruta)-1], ruta[0])
+	distanciaTotal += DistanciaEuclidiana(ruta[len(ruta)-1], ruta[0])
 	return distanciaTotal
 }

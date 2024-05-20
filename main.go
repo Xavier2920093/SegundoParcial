@@ -1,122 +1,80 @@
 package main
 
 import (
-	"bufio"
 	"fmt"
-	"math"
-	"os"
-	"strconv"
-	"strings"
+	"sync"
+
+	"github.com/Xavier2920093/SegundoParcial/LectorInstancias"
+	"github.com/Xavier2920093/SegundoParcial/TSP"
 )
 
-// Estructura para representar un punto en el plano 2D
-type Point struct {
-	X, Y float64
-}
-
-// Función para calcular la distancia euclidiana entre dos puntos
-func distance(p1, p2 Point) float64 {
-	dx := p1.X - p2.X
-	dy := p1.Y - p2.Y
-	return math.Sqrt(dx*dx + dy*dy)
-}
-
-// Función para leer el archivo y devolver una lista de puntos
-func readPoints(filename string) ([]Point, error) {
-	file, err := os.Open(filename)
-	if err != nil {
-		return nil, err
-	}
-	defer file.Close()
-
-	var points []Point
-	scanner := bufio.NewScanner(file)
-	for scanner.Scan() {
-		line := scanner.Text()
-		if strings.HasPrefix(line, "NODE_COORD_SECTION") {
-			break
-		}
-	}
-
-	for scanner.Scan() {
-		line := scanner.Text()
-		if line == "EOF" {
-			break
-		}
-		fields := strings.Fields(line)
-		x, _ := strconv.ParseFloat(fields[1], 64)
-		y, _ := strconv.ParseFloat(fields[2], 64)
-		points = append(points, Point{x, y})
-	}
-
-	return points, nil
-}
-
-// Función para encontrar el punto más cercano a un punto en la lista de puntos
-func findNearestPoint(p Point, points []Point, visited []bool) int {
-	minDist := math.Inf(1)
-	nearestIndex := -1
-
-	for i, point := range points {
-		if !visited[i] {
-			dist := distance(p, point)
-			if dist < minDist {
-				minDist = dist
-				nearestIndex = i
-			}
-		}
-	}
-
-	return nearestIndex
-}
-
-// Función para resolver el TSP utilizando el algoritmo de inserción más cercana
-func solveTSP(points []Point) []int {
-	n := len(points)
-	tour := make([]int, n)
-	visited := make([]bool, n)
-	start := 0
-	tour[0] = start
-	visited[start] = true
-
-	for i := 1; i < n; i++ {
-		prevPoint := points[tour[i-1]]
-		nearestIndex := findNearestPoint(prevPoint, points, visited)
-		tour[i] = nearestIndex
-		visited[nearestIndex] = true
-	}
-
-	// Agregar el punto de origen al final del recorrido para cerrar el ciclo
-	tour = append(tour, start)
-
-	return tour
-}
-
-func totalDistance(points []Point, tour []int) float64 {
-	total := 0.0
-	n := len(tour)
-
-	for i := 0; i < n; i++ {
-		from := points[tour[i]]
-		to := points[tour[(i+1)%n]] // Para cerrar el ciclo
-		total += distance(from, to)
-	}
-
-	return total
-}
-
 func main() {
-	filename := "dj38.tsp"
-	points, err := readPoints(filename)
+	CanalNodo := make(chan []LectorInstancias.Nodo, 1)
+	CanalVecino := make(chan LectorInstancias.Resultado, 1)
+	CanalInsercion := make(chan LectorInstancias.Resultado, 1)
+	CanalVecindario := make(chan LectorInstancias.Resultado, 1)
 
-	if err != nil {
-		fmt.Println("Error al leer el archivo:", err)
-		return
-	}
+	var wg sync.WaitGroup
 
-	tour := solveTSP(points)
-	total := totalDistance(points, tour)
+	// Iniciar una goroutine para leer los nodos y enviarlos al canal
+	go func() {
+		defer close(CanalNodo)
+		nodos := LectorInstancias.LeerNodos("dj38.tsp")
+		CanalNodo <- nodos
+	}()
 
-	fmt.Println("Tour óptimo:", tour)
-	fmt.Println("Total del tour:", total)
+	// Recibir los nodos del canal
+	IndiceNodos := <-CanalNodo
+
+	// Calcular la ruta óptima utilizando Vecino Más Cercano
+	wg.Add(1)
+	go func() {
+		defer wg.Done()
+		distanciasPrim, distanciasSec := TSP.Calculo(IndiceNodos)
+		fmt.Println("Distancias calculadas por búsqueda de vecindario:", append(distanciasPrim, distanciasSec...))
+	}()
+
+	// Calcular la ruta óptima utilizando Vecino Más Cercano
+	wg.Add(1)
+	go func() {
+		defer wg.Done()
+		rutaVecinoMasCercano, distanciaTotalVecinoMasCercano := TSP.VecinoMasCercano(IndiceNodos)
+		fmt.Println("Ruta utilizando Vecino Más Cercano:", rutaVecinoMasCercano)
+		fmt.Println("Distancia total utilizando Vecino Más Cercano:", distanciaTotalVecinoMasCercano)
+		Resve := LectorInstancias.CrearResultado(rutaVecinoMasCercano, distanciaTotalVecinoMasCercano)
+		CanalVecino <- *Resve
+		close(CanalVecino)
+	}()
+
+	// Calcular la ruta óptima utilizando Inserción Más Cercana
+	wg.Add(1)
+	go func() {
+		defer wg.Done()
+		rutaInsercionMasCercana, distanciaTotalInsercionMasCercana := TSP.InsercionMasCercana(IndiceNodos)
+		fmt.Println("Ruta utilizando Inserción Más Cercana:", rutaInsercionMasCercana)
+		fmt.Println("Distancia total utilizando Inserción Más Cercana:", distanciaTotalInsercionMasCercana)
+		Resin := LectorInstancias.CrearResultado(rutaInsercionMasCercana, distanciaTotalInsercionMasCercana)
+		CanalInsercion <- *Resin
+		close(CanalInsercion)
+	}()
+
+	// Implementar la búsqueda de vecindario
+	wg.Add(1)
+	go func() {
+		defer wg.Done()
+		rutaVecindario, distanciaTotalVecindario := TSP.BusquedaVecindario(IndiceNodos)
+		fmt.Println("Ruta utilizando Búsqueda de Vecindario:", rutaVecindario)
+		fmt.Println("Distancia total utilizando Búsqueda de Vecindario:", distanciaTotalVecindario)
+		ResVecindario := LectorInstancias.CrearResultado(rutaVecindario, distanciaTotalVecindario)
+		CanalVecindario <- *ResVecindario
+		close(CanalVecindario)
+	}()
+
+	// Esperar a que todas las goroutines terminen
+	wg.Wait()
+
+	// Imprimir los resultados finales
+	fmt.Println(<-CanalVecino)
+	fmt.Println(<-CanalInsercion)
+	fmt.Println(<-CanalVecindario)
 }
