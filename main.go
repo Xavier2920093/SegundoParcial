@@ -9,24 +9,21 @@ import (
 )
 
 func main() {
-	CanalNodo := make(chan []LectorInstancias.Nodo, 1)
+	PuntoCanal := make(chan []LectorInstancias.Nodo, 1)
 	CanalVecino := make(chan LectorInstancias.Resultado, 1)
 	CanalInsercion := make(chan LectorInstancias.Resultado, 1)
 	CanalVecindario := make(chan LectorInstancias.Resultado, 1)
 
 	var wg sync.WaitGroup
 
-	// Iniciar una goroutine para leer los nodos y enviarlos al canal
 	go func() {
-		defer close(CanalNodo)
+		defer close(PuntoCanal)
 		nodos := LectorInstancias.LeerNodos("dj38.tsp")
-		CanalNodo <- nodos
+		PuntoCanal <- nodos
 	}()
 
-	// Recibir los nodos del canal
-	IndiceNodos := <-CanalNodo
+	IndiceNodos := <-PuntoCanal
 
-	// Calcular la ruta óptima utilizando Vecino Más Cercano
 	wg.Add(1)
 	go func() {
 		defer wg.Done()
@@ -34,7 +31,6 @@ func main() {
 		fmt.Println("Distancias calculadas por búsqueda de vecindario:", append(distanciasPrim, distanciasSec...))
 	}()
 
-	// Calcular la ruta óptima utilizando Vecino Más Cercano
 	wg.Add(1)
 	go func() {
 		defer wg.Done()
@@ -46,34 +42,30 @@ func main() {
 		close(CanalVecino)
 	}()
 
-	// Calcular la ruta óptima utilizando Inserción Más Cercana
 	wg.Add(1)
 	go func() {
 		defer wg.Done()
 		rutaInsercionMasCercana, distanciaTotalInsercionMasCercana := TSP.InsercionMasCercana(IndiceNodos)
-		fmt.Println("Ruta utilizando Inserción Más Cercana:", rutaInsercionMasCercana)
+		fmt.Println("Ruta utilizada Inserción Más Cercana:", rutaInsercionMasCercana)
 		fmt.Println("Distancia total utilizando Inserción Más Cercana:", distanciaTotalInsercionMasCercana)
 		Resin := LectorInstancias.CrearResultado(rutaInsercionMasCercana, distanciaTotalInsercionMasCercana)
 		CanalInsercion <- *Resin
 		close(CanalInsercion)
 	}()
 
-	// Implementar la búsqueda de vecindario
 	wg.Add(1)
 	go func() {
 		defer wg.Done()
 		rutaVecindario, distanciaTotalVecindario := TSP.BusquedaVecindario(IndiceNodos)
-		fmt.Println("Ruta utilizando Búsqueda de Vecindario:", rutaVecindario)
+		fmt.Println("Ruta utilizaDA Búsqueda de Vecindario:", rutaVecindario)
 		fmt.Println("Distancia total utilizando Búsqueda de Vecindario:", distanciaTotalVecindario)
 		ResVecindario := LectorInstancias.CrearResultado(rutaVecindario, distanciaTotalVecindario)
 		CanalVecindario <- *ResVecindario
 		close(CanalVecindario)
 	}()
 
-	// Esperar a que todas las goroutines terminen
 	wg.Wait()
 
-	// Imprimir los resultados finales
 	fmt.Println(<-CanalVecino)
 	fmt.Println(<-CanalInsercion)
 	fmt.Println(<-CanalVecindario)

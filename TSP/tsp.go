@@ -12,10 +12,10 @@ import (
 )
 
 // Calcula la distancia euclidiana entre dos nodos
-func DistanciaEuclidiana(nodo1, nodo2 lectorinstancias.Nodo) float64 {
-	deltaX := nodo1.CoorX - nodo2.CoorX
-	deltaY := nodo1.CoorY - nodo2.CoorY
-	return math.Sqrt(deltaX*deltaX + deltaY*deltaY)
+func DistanciaEuclidiana(nodo0, nodo1 lectorinstancias.Nodo) float64 {
+	DX := nodo0.CoorX - nodo1.CoorX
+	DY := nodo0.CoorY - nodo1.CoorY
+	return math.Sqrt(DX*DX + DY*DY)
 }
 
 // VecinoMásCercano calcula la ruta óptima utilizando el algoritmo del vecino más cercano
@@ -186,6 +186,60 @@ func Calculo(IndiceNodos []lectorinstancias.Nodo) ([]lectorinstancias.Distancia,
 
 	return distanciasPrim, distanciasSec
 
+}
+
+// Implementación del algoritmo de 2-opt para mejorar la ruta en la búsqueda de vecindario
+func DosOpt(ruta []lectorinstancias.Nodo) ([]lectorinstancias.Distancia, float64) {
+	mejorado := true
+	distanciaTotal := calcularDistanciaTotal(ruta)
+
+	for mejorado {
+		mejorado = false
+		for i := 1; i < len(ruta)-2; i++ {
+			for j := i + 1; j < len(ruta)-1; j++ {
+				nuevaRuta := intercambiarRutas(ruta, i, j)
+				nuevaDistancia := calcularDistanciaTotal(nuevaRuta)
+
+				if nuevaDistancia < distanciaTotal {
+					ruta = nuevaRuta
+					distanciaTotal = nuevaDistancia
+					mejorado = true
+				}
+			}
+		}
+	}
+
+	// Construir la lista de distancias basada en la ruta final
+	var distancias []lectorinstancias.Distancia
+	for i := 0; i < len(ruta)-1; i++ {
+		distancia := lectorinstancias.Distancia{
+			NodoI:     ruta[i].Nombre,
+			NodoFinal: ruta[i+1].Nombre,
+			Distancia: DistanciaEuclidiana(ruta[i], ruta[i+1]),
+		}
+		distancias = append(distancias, distancia)
+	}
+	// Agregar la distancia desde el último nodo hasta el primero para cerrar el ciclo
+	distanciaFinal := lectorinstancias.Distancia{
+		NodoI:     ruta[len(ruta)-1].Nombre,
+		NodoFinal: ruta[0].Nombre,
+		Distancia: DistanciaEuclidiana(ruta[len(ruta)-1], ruta[0]),
+	}
+	distancias = append(distancias, distanciaFinal)
+
+	return distancias, distanciaTotal
+}
+
+// Intercambiar dos aristas en la ruta
+func intercambiarRutas(ruta []lectorinstancias.Nodo, i, j int) []lectorinstancias.Nodo {
+	nuevaRuta := make([]lectorinstancias.Nodo, len(ruta))
+	copy(nuevaRuta, ruta)
+
+	for k := 0; k < (j-i)/2; k++ {
+		nuevaRuta[i+k], nuevaRuta[j-k] = nuevaRuta[j-k], nuevaRuta[i+k]
+	}
+
+	return nuevaRuta
 }
 
 func BusquedaVecindario(nodos []lectorinstancias.Nodo) ([]lectorinstancias.Distancia, float64) {
