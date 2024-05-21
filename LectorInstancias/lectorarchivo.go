@@ -8,48 +8,48 @@ import (
 	"strings"
 )
 
-type Nodo struct {
-	Nombre   string
-	CoorX    float64
-	CoorY    float64
-	Visitado bool
-}
 type Distancia struct {
-	NodoI     string
-	NodoFinal string
+	PuntoInicial string
+	PuntoFinal   string
+	Distancia    float64
+}
+
+type TipoResultado struct {
+	Ruta      []Distancia
 	Distancia float64
 }
-
-type Resultado struct {
-	RutaR      []Distancia
-	DistanciaR float64
+type Punto struct {
+	Nombre    string
+	Posicionx float64
+	Posiciony float64
+	Pasado    bool
 }
 
-func CrearResultado(Ruta []Distancia, Distancia float64) *Resultado {
-	Cn := &Resultado{
-		RutaR:      Ruta,
-		DistanciaR: Distancia,
+func Resultado(Ruta []Distancia, Distancia float64) *TipoResultado {
+	rsult := &TipoResultado{
+		Ruta:      Ruta,
+		Distancia: Distancia,
 	}
 
-	return Cn
+	return rsult
 
 }
 
-func CrearNodos(nombre string, X, Y float64) *Nodo {
-	Cn := &Nodo{
-		Nombre:   nombre,
-		CoorX:    X,
-		CoorY:    Y,
-		Visitado: false,
+func CrearPuntos(nombre string, X, Y float64) *Punto {
+	Resultado := &Punto{
+		Nombre:    nombre,
+		Posicionx: X,
+		Posiciony: Y,
+		Pasado:    false,
 	}
 
-	return Cn
+	return Resultado
 
 }
 
-func LeerNodos(NombreArchivo string) []Nodo {
+func LecturaPuntos(NombreArchivo string) []Punto {
 
-	var ColeccionNodos []Nodo
+	var ColeccionNodos []Punto
 
 	file, err := os.Open(NombreArchivo)
 	if err != nil {
@@ -60,16 +60,14 @@ func LeerNodos(NombreArchivo string) []Nodo {
 
 	scanner := bufio.NewScanner(file)
 
-	// Lee cada línea del archivo
 	for scanner.Scan() {
 		linea := scanner.Text()
 		campos := strings.Split(linea, " ")
-		// Convierte los valores a los tipos adecuados
 		Z := campos[0]
 		X, _ := strconv.ParseFloat(campos[1], 32)
 		Y, _ := strconv.ParseFloat(campos[2], 32)
 
-		ColeccionNodos = append(ColeccionNodos, *CrearNodos(Z, X, Y))
+		ColeccionNodos = append(ColeccionNodos, *CrearPuntos(Z, X, Y))
 
 	}
 	return ColeccionNodos

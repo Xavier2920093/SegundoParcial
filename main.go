@@ -9,16 +9,16 @@ import (
 )
 
 func main() {
-	PuntoCanal := make(chan []LectorInstancias.Nodo, 1)
-	CanalVecino := make(chan LectorInstancias.Resultado, 1)
-	CanalInsercion := make(chan LectorInstancias.Resultado, 1)
-	CanalVecindario := make(chan LectorInstancias.Resultado, 1)
+	PuntoCanal := make(chan []LectorInstancias.Punto, 1)
+	CanalVecino := make(chan LectorInstancias.TipoResultado, 1)
+	CanalInsercion := make(chan LectorInstancias.TipoResultado, 1)
+	CanalVecindario := make(chan LectorInstancias.TipoResultado, 1)
 
 	var wg sync.WaitGroup
 
 	go func() {
 		defer close(PuntoCanal)
-		nodos := LectorInstancias.LeerNodos("dj38.tsp")
+		nodos := LectorInstancias.LecturaPuntos("dj38.tsp")
 		PuntoCanal <- nodos
 	}()
 
@@ -27,28 +27,21 @@ func main() {
 	wg.Add(1)
 	go func() {
 		defer wg.Done()
-		distanciasPrim, distanciasSec := TSP.Calculo(IndiceNodos)
-		fmt.Println("Distancias calculadas por búsqueda de vecindario:", append(distanciasPrim, distanciasSec...))
-	}()
-
-	wg.Add(1)
-	go func() {
-		defer wg.Done()
-		rutaVecinoMasCercano, distanciaTotalVecinoMasCercano := TSP.VecinoMasCercano(IndiceNodos)
-		fmt.Println("Ruta utilizando Vecino Más Cercano:", rutaVecinoMasCercano)
-		fmt.Println("Distancia total utilizando Vecino Más Cercano:", distanciaTotalVecinoMasCercano)
-		Resve := LectorInstancias.CrearResultado(rutaVecinoMasCercano, distanciaTotalVecinoMasCercano)
-		CanalVecino <- *Resve
-		close(CanalVecino)
+		rutaVecindario, distanciaTotalVecindario := TSP.BusquedaVecindario(IndiceNodos)
+		fmt.Println("Ruta  Búsqueda de Vecindario:", rutaVecindario)
+		fmt.Println("Distancia total  Búsqueda de Vecindario:", distanciaTotalVecindario)
+		ResVecindario := LectorInstancias.Resultado(rutaVecindario, distanciaTotalVecindario)
+		CanalVecindario <- *ResVecindario
+		close(CanalVecindario)
 	}()
 
 	wg.Add(1)
 	go func() {
 		defer wg.Done()
 		rutaInsercionMasCercana, distanciaTotalInsercionMasCercana := TSP.InsercionMasCercana(IndiceNodos)
-		fmt.Println("Ruta utilizada Inserción Más Cercana:", rutaInsercionMasCercana)
-		fmt.Println("Distancia total utilizando Inserción Más Cercana:", distanciaTotalInsercionMasCercana)
-		Resin := LectorInstancias.CrearResultado(rutaInsercionMasCercana, distanciaTotalInsercionMasCercana)
+		fmt.Println("Ruta  Inserciion cercana:", rutaInsercionMasCercana)
+		fmt.Println("Distancia   insercion mas cercana:", distanciaTotalInsercionMasCercana)
+		Resin := LectorInstancias.Resultado(rutaInsercionMasCercana, distanciaTotalInsercionMasCercana)
 		CanalInsercion <- *Resin
 		close(CanalInsercion)
 	}()
@@ -56,17 +49,25 @@ func main() {
 	wg.Add(1)
 	go func() {
 		defer wg.Done()
-		rutaVecindario, distanciaTotalVecindario := TSP.BusquedaVecindario(IndiceNodos)
-		fmt.Println("Ruta utilizaDA Búsqueda de Vecindario:", rutaVecindario)
-		fmt.Println("Distancia total utilizando Búsqueda de Vecindario:", distanciaTotalVecindario)
-		ResVecindario := LectorInstancias.CrearResultado(rutaVecindario, distanciaTotalVecindario)
-		CanalVecindario <- *ResVecindario
-		close(CanalVecindario)
+		rutaVecinoMasCercano, distanciaTotalVecinoMasCercano := TSP.VecinoMasCercano(IndiceNodos)
+		fmt.Println("Ruta  vecino mas cercano:", rutaVecinoMasCercano)
+		fmt.Println("Distancia total  vecino mas cercano:", distanciaTotalVecinoMasCercano)
+		Resve := LectorInstancias.Resultado(rutaVecinoMasCercano, distanciaTotalVecinoMasCercano)
+		CanalVecino <- *Resve
+		close(CanalVecino)
+	}()
+
+	wg.Add(1)
+	go func() {
+		defer wg.Done()
+		distanciasPrim, distanciasSec := TSP.Calculo(IndiceNodos)
+		fmt.Println("Distancias calculadas por búsqueda de vecindario:", append(distanciasPrim, distanciasSec...))
 	}()
 
 	wg.Wait()
 
 	fmt.Println(<-CanalVecino)
-	fmt.Println(<-CanalInsercion)
 	fmt.Println(<-CanalVecindario)
+	fmt.Println(<-CanalInsercion)
+
 }
