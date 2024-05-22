@@ -2,7 +2,7 @@ package LectorInstancias
 
 import (
 	"bufio"
-	"fmt"
+	"log"
 	"os"
 	"strconv"
 	"strings"
@@ -18,6 +18,7 @@ type TipoResultado struct {
 	Ruta      []Distancia
 	Distancia float64
 }
+
 type Punto struct {
 	Nombre    string
 	Posicionx float64
@@ -32,7 +33,6 @@ func Resultado(Ruta []Distancia, Distancia float64) *TipoResultado {
 	}
 
 	return rsult
-
 }
 
 func CrearPuntos(nombre string, X, Y float64) *Punto {
@@ -44,31 +44,48 @@ func CrearPuntos(nombre string, X, Y float64) *Punto {
 	}
 
 	return Resultado
-
 }
 
 func LecturaPuntos(NombreArchivo string) []Punto {
-
 	var ColeccionNodos []Punto
 
 	file, err := os.Open(NombreArchivo)
 	if err != nil {
-		fmt.Println(err)
-		os.Exit(1)
+		log.Fatal(err)
 	}
 	defer file.Close()
 
+	encontrado := false
 	scanner := bufio.NewScanner(file)
-
 	for scanner.Scan() {
 		linea := scanner.Text()
-		campos := strings.Split(linea, " ")
-		Z := campos[0]
-		X, _ := strconv.ParseFloat(campos[1], 32)
-		Y, _ := strconv.ParseFloat(campos[2], 32)
 
-		ColeccionNodos = append(ColeccionNodos, *CrearPuntos(Z, X, Y))
+		if encontrado {
+			campos := strings.Fields(linea)
+			if len(campos) != 3 {
+				continue
+			}
+			Z := campos[0]
+			X, err := strconv.ParseFloat(campos[1], 64)
+			if err != nil {
+				log.Fatal(err)
+			}
+			Y, err := strconv.ParseFloat(campos[2], 64)
+			if err != nil {
+				log.Fatal(err)
+			}
+			ColeccionNodos = append(ColeccionNodos, Punto{Nombre: Z, Posicionx: X, Posiciony: Y})
+		}
 
+		if strings.TrimSpace(linea) == "NODE_COORD_SECTION" {
+			encontrado = true
+			continue
+		}
 	}
+
+	if err := scanner.Err(); err != nil {
+		log.Fatal(err)
+	}
+
 	return ColeccionNodos
 }

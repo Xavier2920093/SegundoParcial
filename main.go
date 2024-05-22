@@ -57,17 +57,10 @@ func main() {
 		close(CanalVecino)
 	}()
 
-	wg.Add(1)
-	go func() {
-		defer wg.Done()
-		distanciasPrim, distanciasSec := TSP.Calculo(IndiceNodos)
-		fmt.Println("Distancias calculadas por búsqueda de vecindario:", append(distanciasPrim, distanciasSec...))
-	}()
-
-	wg.Wait()
-
 	fmt.Println(<-CanalVecino)
+	fmt.Print("")
 	fmt.Println(<-CanalVecindario)
+	fmt.Print("")
 	fmt.Println(<-CanalInsercion)
 
 }

@@ -161,6 +161,9 @@ func calcularDistancias(nodos []lectorinstancias.Punto, distancias *[]lectorinst
 
 func Calculo(IndiceNodos []lectorinstancias.Punto) ([]lectorinstancias.Distancia, []lectorinstancias.Distancia) {
 	rand.Seed(time.Now().UnixNano())
+	if len(IndiceNodos) == 0 {
+		return nil, nil
+	}
 	IndiceAleatorio := rand.Intn(len(IndiceNodos))
 	prim := IndiceNodos[:IndiceAleatorio]
 	Sec := IndiceNodos[IndiceAleatorio-1:]
