@@ -57,13 +57,13 @@ func VecinoMasCercano(nodos []lectorinstancias.Punto) ([]lectorinstancias.Punto,
 	return ruta, totalDistancia
 }
 
-func InsercionMasCercana(nodos []lectorinstancias.Punto) ([]lectorinstancias.Distancia, float64) {
+func InsercionMasCercana(nodos []lectorinstancias.Punto) ([]lectorinstancias.Punto, float64) {
 	if len(nodos) == 0 {
 		return nil, 0
 	}
 
 	// Empezamos con un ciclo que incluye el primer nodo
-	var ruta []lectorinstancias.Distancia
+	var ruta []lectorinstancias.Punto
 	totalDistancia := 0.0
 
 	visitados := make(map[string]bool)
@@ -71,17 +71,9 @@ func InsercionMasCercana(nodos []lectorinstancias.Punto) ([]lectorinstancias.Dis
 
 	if len(nodos) > 1 {
 		visitados[nodos[1].Nombre] = true
-		ruta = append(ruta, lectorinstancias.Distancia{
-			PuntoInicial: nodos[0].Nombre,
-			PuntoFinal:   nodos[1].Nombre,
-			Distancia:    DistanciaEuclidiana(nodos[0], nodos[1]),
-		})
-		ruta = append(ruta, lectorinstancias.Distancia{
-			PuntoInicial: nodos[1].Nombre,
-			PuntoFinal:   nodos[0].Nombre,
-			Distancia:    DistanciaEuclidiana(nodos[1], nodos[0]),
-		})
-		totalDistancia = 2 * DistanciaEuclidiana(nodos[0], nodos[1])
+		ruta = append(ruta, nodos[0])
+		ruta = append(ruta, nodos[1])
+		totalDistancia = DistanciaEuclidiana(nodos[0], nodos[1])
 	}
 
 	// Inserción más cercana
@@ -93,9 +85,12 @@ func InsercionMasCercana(nodos []lectorinstancias.Punto) ([]lectorinstancias.Dis
 		for _, nodo := range nodos {
 			if !visitados[nodo.Nombre] {
 				for i := 0; i < len(ruta); i++ {
-					nodoI := encontrarNodo(ruta[i].PuntoInicial, nodos)
-					nodoF := encontrarNodo(ruta[i].PuntoFinal, nodos)
-					incremento := DistanciaEuclidiana(nodoI, nodo) + DistanciaEuclidiana(nodo, nodoF) - ruta[i].Distancia
+					nodoI := encontrarNodo(ruta[i].Nombre, nodos)
+					nodoF := encontrarNodo(ruta[(i+1)%len(ruta)].Nombre, nodos)
+					distAnterior := DistanciaEuclidiana(nodoI, ruta[i])
+					distSiguiente := DistanciaEuclidiana(ruta[(i+1)%len(ruta)], nodoF)
+					incremento := DistanciaEuclidiana(nodoI, nodo) +
+						DistanciaEuclidiana(nodo, nodoF) - distAnterior - distSiguiente
 					if incremento < minIncremento {
 						nodoMasCercano = nodo
 						minIncremento = incremento
@@ -107,25 +102,14 @@ func InsercionMasCercana(nodos []lectorinstancias.Punto) ([]lectorinstancias.Dis
 
 		// Insertar el nodo en la posición encontrada
 		if (nodoMasCercano != lectorinstancias.Punto{}) {
-			nodoI := encontrarNodo(ruta[posicion].PuntoInicial, nodos)
-			nodoF := encontrarNodo(ruta[posicion].PuntoFinal, nodos)
-			ruta = append(ruta[:posicion+1], ruta[posicion:]...) // Hacer espacio para la nueva distancia
-			ruta[posicion] = lectorinstancias.Distancia{
-				PuntoInicial: nodoI.Nombre,
-				PuntoFinal:   nodoMasCercano.Nombre,
-				Distancia:    DistanciaEuclidiana(nodoI, nodoMasCercano),
-			}
-			ruta[posicion+1] = lectorinstancias.Distancia{
-				PuntoInicial: nodoMasCercano.Nombre,
-				PuntoFinal:   nodoF.Nombre,
-				Distancia:    DistanciaEuclidiana(nodoMasCercano, nodoF),
-			}
+			ruta = append(ruta[:posicion+1], append([]lectorinstancias.Punto{nodoMasCercano}, ruta[posicion+1:]...)...)
 			totalDistancia += minIncremento
 			visitados[nodoMasCercano.Nombre] = true
 		}
 	}
 
 	return ruta, totalDistancia
+
 }
 
 func encontrarNodo(nombre string, nodos []lectorinstancias.Punto) lectorinstancias.Punto {
@@ -134,7 +118,7 @@ func encontrarNodo(nombre string, nodos []lectorinstancias.Punto) lectorinstanci
 			return nodo
 		}
 	}
-	return lectorinstancias.Punto{}
+	return lectorinstancias.Punto{} // Retornar un punto vacío si no se encuentra el nodo
 }
 
 func calcularDistancias(nodos []lectorinstancias.Punto, distancias *[]lectorinstancias.Distancia, wg *sync.WaitGroup) {
