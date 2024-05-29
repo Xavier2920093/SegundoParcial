@@ -1,11 +1,7 @@
 package TSP
 
 import (
-	"fmt"
 	"math"
-	"math/rand"
-	"sync"
-	"time"
 
 	lectorinstancias "github.com/Xavier2920093/SegundoParcial/LectorInstancias"
 	//aca iria el uso del modulo lectorinstancias
@@ -119,45 +115,6 @@ func encontrarNodo(nombre string, nodos []lectorinstancias.Punto) lectorinstanci
 		}
 	}
 	return lectorinstancias.Punto{} // Retornar un punto vacío si no se encuentra el nodo
-}
-
-func calcularDistancias(nodos []lectorinstancias.Punto, distancias *[]lectorinstancias.Distancia, wg *sync.WaitGroup) {
-	defer wg.Done()
-	for i := 0; i < len(nodos)-1; i++ {
-		for j := i + 1; j < len(nodos); j++ {
-			distancia := DistanciaEuclidiana(nodos[i], nodos[j])
-			*distancias = append(*distancias, lectorinstancias.Distancia{
-				PuntoInicial: nodos[i].Nombre,
-				PuntoFinal:   nodos[j].Nombre,
-				Distancia:    distancia,
-			})
-		}
-	}
-}
-
-func Calculo(IndiceNodos []lectorinstancias.Punto) ([]lectorinstancias.Distancia, []lectorinstancias.Distancia) {
-	rand.Seed(time.Now().UnixNano())
-	if len(IndiceNodos) == 0 {
-		return nil, nil
-	}
-	IndiceAleatorio := rand.Intn(len(IndiceNodos))
-	prim := IndiceNodos[:IndiceAleatorio]
-	Sec := IndiceNodos[IndiceAleatorio-1:]
-
-	var distanciasPrim []lectorinstancias.Distancia
-	var distanciasSec []lectorinstancias.Distancia
-	var wg sync.WaitGroup
-
-	wg.Add(2)
-	fmt.Println(IndiceNodos[IndiceAleatorio])
-
-	go calcularDistancias(prim, &distanciasPrim, &wg)
-	go calcularDistancias(Sec, &distanciasSec, &wg)
-
-	wg.Wait()
-
-	return distanciasPrim, distanciasSec
-
 }
 
 func BusquedaVecindario(nodos []lectorinstancias.Punto) ([]lectorinstancias.Distancia, float64) {
