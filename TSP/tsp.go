@@ -16,13 +16,13 @@ func DistanciaEuclidiana(nodo0, nodo1 lectorinstancias.Punto) float64 {
 	DY := nodo0.Posiciony - nodo1.Posiciony
 	return math.Sqrt(DX*DX + DY*DY)
 }
-func VecinoMasCercano(nodos []lectorinstancias.Punto) ([]lectorinstancias.Distancia, float64) {
+func VecinoMasCercano(nodos []lectorinstancias.Punto) ([]lectorinstancias.Punto, float64) {
 	if len(nodos) == 0 {
 		return nil, 0
 	}
 
 	visitados := make(map[string]bool)
-	var ruta []lectorinstancias.Distancia
+	var ruta []lectorinstancias.Punto
 	totalDistancia := 0.0
 
 	nodoActual := nodos[0]
@@ -43,23 +43,15 @@ func VecinoMasCercano(nodos []lectorinstancias.Punto) ([]lectorinstancias.Distan
 		}
 
 		if (nodoMasCercano != lectorinstancias.Punto{}) {
-			ruta = append(ruta, lectorinstancias.Distancia{
-				PuntoInicial: nodoActual.Nombre,
-				PuntoFinal:   nodoMasCercano.Nombre,
-				Distancia:    minDistancia,
-			})
+			ruta = append(ruta, nodoActual)
 			totalDistancia += minDistancia
 			nodoActual = nodoMasCercano
 			visitados[nodoActual.Nombre] = true
 		}
 	}
 
-	// Regresar al nodo inicial para completar el ciclo
-	ruta = append(ruta, lectorinstancias.Distancia{
-		PuntoInicial: nodoActual.Nombre,
-		PuntoFinal:   nodos[0].Nombre,
-		Distancia:    DistanciaEuclidiana(nodoActual, nodos[0]),
-	})
+	// Agregar el nodo inicial al final para completar el ciclo
+	ruta = append(ruta, nodos[0])
 	totalDistancia += DistanciaEuclidiana(nodoActual, nodos[0])
 
 	return ruta, totalDistancia
@@ -182,57 +174,6 @@ func Calculo(IndiceNodos []lectorinstancias.Punto) ([]lectorinstancias.Distancia
 
 	return distanciasPrim, distanciasSec
 
-}
-
-// Implementación del algoritmo de 2-opt para mejorar la ruta en la búsqueda de vecindario
-func DosOpt(ruta []lectorinstancias.Punto) ([]lectorinstancias.Distancia, float64) {
-	mejorado := true
-	distanciaTotal := calcularDistanciaTotal(ruta)
-
-	for mejorado {
-		mejorado = false
-		for i := 1; i < len(ruta)-2; i++ {
-			for j := i + 1; j < len(ruta)-1; j++ {
-				nuevaRuta := intercambiarRutas(ruta, i, j)
-				nuevaDistancia := calcularDistanciaTotal(nuevaRuta)
-
-				if nuevaDistancia < distanciaTotal {
-					ruta = nuevaRuta
-					distanciaTotal = nuevaDistancia
-					mejorado = true
-				}
-			}
-		}
-	}
-
-	var distancias []lectorinstancias.Distancia
-	for i := 0; i < len(ruta)-1; i++ {
-		distancia := lectorinstancias.Distancia{
-			PuntoInicial: ruta[i].Nombre,
-			PuntoFinal:   ruta[i+1].Nombre,
-			Distancia:    DistanciaEuclidiana(ruta[i], ruta[i+1]),
-		}
-		distancias = append(distancias, distancia)
-	}
-	distanciaFinal := lectorinstancias.Distancia{
-		PuntoInicial: ruta[len(ruta)-1].Nombre,
-		PuntoFinal:   ruta[0].Nombre,
-		Distancia:    DistanciaEuclidiana(ruta[len(ruta)-1], ruta[0]),
-	}
-	distancias = append(distancias, distanciaFinal)
-
-	return distancias, distanciaTotal
-}
-
-func intercambiarRutas(ruta []lectorinstancias.Punto, i, j int) []lectorinstancias.Punto {
-	nuevaRuta := make([]lectorinstancias.Punto, len(ruta))
-	copy(nuevaRuta, ruta)
-
-	for k := 0; k < (j-i)/2; k++ {
-		nuevaRuta[i+k], nuevaRuta[j-k] = nuevaRuta[j-k], nuevaRuta[i+k]
-	}
-
-	return nuevaRuta
 }
 
 func BusquedaVecindario(nodos []lectorinstancias.Punto) ([]lectorinstancias.Distancia, float64) {
